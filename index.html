@@ -2,195 +2,402 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glassmorphic Archive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>X MANIA • Glassmorphic Media Index</title>
+    <!-- Telegram WebApp JS -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons & Google Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body {
-            background: radial-gradient(circle at top left, #0f172a, #020617);
-            min-height: 100vh;
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c20 0%, #150d2a 50%, #080512 100%);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.12);
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-cyan: #06b6d4;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
         }
-        /* Custom Glass Effect Utility */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 30px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Backgrounds */
+        .ambient-glow {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .glow-1 { top: -50px; left: -50px; background: var(--accent-purple); }
+        .glow-2 { bottom: 100px; right: -50px; background: var(--accent-pink); }
+
+        /* Header */
+        header {
+            padding: 24px 20px 16px;
+            position: sticky;
+            top: 0;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            background: rgba(15, 12, 32, 0.65);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 100;
         }
-        .glass-input {
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .brand-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: relative;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.3s ease;
+        }
+
+        .search-bar:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
             background: rgba(255, 255, 255, 0.07);
+        }
+
+        /* Main Container */
+        .container {
+            padding: 16px 20px;
+        }
+
+        /* Performer Section */
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .performer-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 14px;
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .neon-glow {
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+
+        .performer-card:active {
+            transform: scale(0.98);
         }
+
+        .performer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .performer-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-count {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        /* Years Accordion */
+        .year-group {
+            margin-top: 12px;
+            display: none;
+            border-top: 1px dashed var(--glass-border);
+            padding-top: 12px;
+        }
+
+        .year-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-pink);
+            margin: 10px 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Scene Grid */
+        .scene-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .scene-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .scene-item:hover {
+            background: var(--glass-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .scene-info {
+            flex: 1;
+            padding-right: 10px;
+        }
+
+        .scene-title-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .scene-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.available { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .status-dot.pending { background: #ef4444; }
+
+        /* Loader */
+        .loader {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-muted);
+        }
+        .loader i {
+            font-size: 2rem;
+            color: var(--accent-purple);
+            animation: spin 1s infinite linear;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-slate-100 p-4 font-sans antialiased relative overflow-x-hidden">
+<body>
 
-    <!-- Background Decorative Glowing Orbs -->
-    <div class="fixed -top-10 -left-10 w-40 h-40 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="fixed top-1/2 -right-10 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
 
-    <!-- Header Section -->
-    <div class="flex items-center justify-between mb-5 relative z-10">
-        <div>
-            <h1 id="header-title" class="text-xl font-bold bg-gradient-to-r from-sky-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-                👤 Performers
-            </h1>
-            <p id="header-sub" class="text-xs text-slate-400 mt-0.5">Select a performer to explore years</p>
+    <header>
+        <div class="header-top">
+            <div class="brand-title">
+                <i class="fa-solid fa-compact-disc text-purple"></i>
+                <span>X MANIA ARCHIVE</span>
+            </div>
         </div>
-        <button id="back-btn" onclick="goBack()" class="hidden px-3.5 py-1.5 glass-card text-sky-400 text-xs rounded-xl font-semibold hover:bg-white/10 active:scale-95 transition">
-            ← Back
-        </button>
-    </div>
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search performer or scene..." onkeyup="filterContent()">
+        </div>
+    </header>
 
-    <!-- Search Input -->
-    <div class="relative mb-5 z-10">
-        <input type="text" id="search" oninput="handleSearch()" placeholder="🔍 Search library..." 
-               class="w-full p-3 pl-4 rounded-xl glass-input text-sm text-white placeholder-slate-400 focus:outline-none focus:border-sky-400/60 transition">
+    <div class="container">
+        <div class="section-title">Catalog Index</div>
+        <div id="contentList">
+            <div class="loader">
+                <i class="fa-solid fa-circle-notch"></i>
+                <p style="margin-top: 10px;">Loading Media Index...</p>
+            </div>
+        </div>
     </div>
-
-    <!-- Main Container -->
-    <div id="content" class="space-y-3 relative z-10"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand(); // Fullscreen Mini App experience
 
-        let fullData = {};
-        let currentScreen = 'performers';
-        let selectedPerformer = '';
-        let selectedYear = '';
+        // GitHub hosted raw JSON or local API URL
+        const DATA_URL = "data.json"; 
 
-        // Load data.json
-        fetch('data.json')
-            .then(res => res.json())
-            .then(data => {
-                fullData = data.performers || {};
-                renderPerformers();
-            })
-            .catch(() => {
-                document.getElementById('content').innerHTML = `
-                    <div class="glass-card p-6 rounded-2xl text-center text-rose-400 text-xs">
-                        ⚠️ Failed to load library database.
+        let masterData = {};
+
+        async function fetchIndex() {
+            try {
+                const response = await fetch(DATA_URL + "?t=" + new Date().getTime());
+                const data = await response.json();
+                masterData = data.performers || {};
+                renderPerformers(masterData);
+            } catch (err) {
+                document.getElementById("contentList").innerHTML = `
+                    <div style="text-align:center; padding:30px; color:#ef4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem;"></i>
+                        <p style="margin-top:10px;">Failed to load catalog index.</p>
                     </div>`;
-            });
+            }
+        }
 
-        // 1. Render Performers List
-        function renderPerformers(filter = '') {
-            currentScreen = 'performers';
-            document.getElementById('header-title').innerText = '👤 Performers';
-            document.getElementById('header-sub').innerText = 'Select a performer to explore years';
-            document.getElementById('back-btn').classList.add('hidden');
+        function renderPerformers(performers) {
+            const container = document.getElementById("contentList");
+            container.innerHTML = "";
 
-            const container = document.getElementById('content');
-            const perfNames = Object.keys(fullData).filter(p => p.toLowerCase().includes(filter.toLowerCase()));
-
-            if (perfNames.length === 0) {
-                container.innerHTML = `<div class="glass-card p-6 rounded-2xl text-center text-slate-400 text-xs">No performers found.</div>`;
+            if (Object.keys(performers).length === 0) {
+                container.innerHTML = "<p style='color: var(--text-muted); text-align:center;'>No performers indexed yet.</p>";
                 return;
             }
 
-            container.innerHTML = perfNames.map(p => `
-                <div onclick="selectPerformer('${p}')" 
-                     class="glass-card p-4 rounded-2xl flex justify-between items-center active:scale-[0.98] transition hover:border-sky-400/40 cursor-pointer">
-                    <span class="font-semibold text-sm text-sky-200 tracking-wide">👤 ${p}</span>
-                    <span class="text-xs text-sky-400 font-mono bg-sky-500/10 px-2 py-1 rounded-lg border border-sky-400/20">View →</span>
-                </div>
-            `).join('');
-        }
+            for (const [name, pData] of Object.entries(performers)) {
+                let totalScenes = 0;
+                let yearsHtml = "";
 
-        // 2. Render Years Grid
-        function selectPerformer(pName) {
-            selectedPerformer = pName;
-            currentScreen = 'years';
-            document.getElementById('header-title').innerText = `📅 ${pName}`;
-            document.getElementById('header-sub').innerText = 'Select a year to see scenes';
-            document.getElementById('back-btn').classList.remove('hidden');
-            document.getElementById('search').value = '';
+                if (pData.by_year) {
+                    for (const [year, scenes] of Object.entries(pData.by_year)) {
+                        totalScenes += scenes.length;
+                        
+                        let scenesHtml = scenes.map(scene => {
+                            const isUploaded = scene.file_id ? true : false;
+                            return `
+                                <div class="scene-item" onclick="sendToBot('${escapeJs(name)}', '${year}', '${escapeJs(scene.title)}')">
+                                    <div class="scene-info">
+                                        <div class="scene-title-text">${scene.title}</div>
+                                        <div class="scene-sub">Studio: ${scene.distributor || 'N/A'}</div>
+                                    </div>
+                                    <span class="status-dot ${isUploaded ? 'available' : 'pending'}"></span>
+                                </div>
+                            `;
+                        }).join("");
 
-            const container = document.getElementById('content');
-            const years = Object.keys(fullData[pName]?.by_year || {});
+                        yearsHtml += `
+                            <div class="year-title"><i class="fa-solid fa-calendar-days"></i> ${year}</div>
+                            <div class="scene-list">${scenesHtml}</div>
+                        `;
+                    }
+                }
 
-            if (years.length === 0) {
-                container.innerHTML = `<div class="glass-card p-6 rounded-2xl text-center text-slate-400 text-xs">No records available.</div>`;
-                return;
-            }
-
-            container.innerHTML = `<div class="grid grid-cols-2 gap-3">` + years.map(y => `
-                <div onclick="selectYear('${y}')" 
-                     class="glass-card p-5 rounded-2xl text-center active:scale-[0.98] transition hover:border-sky-400/40 cursor-pointer">
-                    <span class="font-bold text-sky-300 text-base tracking-wider">📁 ${y}</span>
-                </div>
-            `).join('') + `</div>`;
-        }
-
-        // 3. Render Scenes List
-        function selectYear(year) {
-            selectedYear = year;
-            currentScreen = 'scenes';
-            document.getElementById('header-title').innerText = `🎬 ${selectedPerformer} (${year})`;
-            document.getElementById('header-sub').innerText = 'Tap GET to receive scene in chat';
-            document.getElementById('back-btn').classList.remove('hidden');
-            document.getElementById('search').value = '';
-
-            renderScenesList();
-        }
-
-        function renderScenesList(filter = '') {
-            const container = document.getElementById('content');
-            const scenes = fullData[selectedPerformer]?.by_year[selectedYear] || [];
-            const filtered = scenes.filter(s => (s.title || '').toLowerCase().includes(filter.toLowerCase()));
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="glass-card p-6 rounded-2xl text-center text-slate-400 text-xs">No scenes found.</div>`;
-                return;
-            }
-
-            container.innerHTML = filtered.map((s) => `
-                <div class="glass-card p-3.5 rounded-2xl flex justify-between items-center hover:border-sky-400/30 transition">
-                    <div class="pr-2">
-                        <div class="font-bold text-sky-200 text-sm tracking-wide">${s.title || 'Untitled'}</div>
-                        <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <span class="bg-white/5 px-2 py-0.5 rounded-md border border-white/10">🏢 ${s.distributor || s.studio || 'N/A'}</span>
+                const cardHtml = `
+                    <div class="performer-card" data-name="${name.toLowerCase()}">
+                        <div class="performer-header" onclick="toggleAccordion(this)">
+                            <div class="performer-name">
+                                <i class="fa-solid fa-user-ninja"></i> ${name}
+                            </div>
+                            <span class="badge-count">${totalScenes} Scenes</span>
+                        </div>
+                        <div class="year-group">
+                            ${yearsHtml}
                         </div>
                     </div>
-                    <button onclick="deliver('${s.title}')" 
-                            class="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white rounded-xl text-xs font-bold shrink-0 neon-glow active:scale-95 transition">
-                        GET 🚀
-                    </button>
-                </div>
-            `).join('');
+                `;
+                container.innerHTML += cardHtml;
+            }
         }
 
-        // Back Navigation
-        function goBack() {
-            if (currentScreen === 'scenes') selectPerformer(selectedPerformer);
-            else if (currentScreen === 'years') renderPerformers();
+        function toggleAccordion(element) {
+            const group = element.nextElementSibling;
+            const isOpen = group.style.display === "block";
+            group.style.display = isOpen ? "none" : "block";
         }
 
-        // Live Search
-        function handleSearch() {
-            const q = document.getElementById('search').value;
-            if (currentScreen === 'performers') renderPerformers(q);
-            else if (currentScreen === 'scenes') renderScenesList(q);
-        }
-
-        // Send Data To Bot
-        function deliver(title) {
-            tg.sendData(JSON.stringify({
+        function sendToBot(performer, year, title) {
+            const payload = {
                 action: "get_scene",
-                performer: selectedPerformer,
-                year: selectedYear,
+                performer: performer,
+                year: year,
                 title: title
-            }));
+            };
+            
+            // Sends data directly back to Telethon Raw Handler
+            tg.sendData(JSON.stringify(payload));
             tg.close();
         }
+
+        function filterContent() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const cards = document.querySelectorAll(".performer-card");
+
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        }
+
+        function escapeJs(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // Initialize App
+        fetchIndex();
     </script>
 </body>
 </html>
