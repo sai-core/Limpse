@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>X MANIA • VisionOS Glass Index</title>
+    <!-- Telegram WebApp JS -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Font Awesome Icons & Google Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-deep: #05070d;
+            --glass-surface: rgba(255, 255, 255, 0.035);
+            --glass-surface-hover: rgba(255, 255, 255, 0.075);
+            --glass-border: rgba(255, 255, 255, 0.09);
+            --glass-border-glow: rgba(125, 216, 255, 0.35);
+            --accent-ice: #7dd8ff;
+            --accent-purple: #a78bfa;
+            --accent-pink: #ec4899;
+            --accent-cyan: #06b6d4;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #34e5a5;
+            --pending: #ff9f6b;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 90px;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+
+        /* Animated VisionOS Aurora Background */
+        .aurora-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .aurora-blob {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.45;
+            animation: auroraFloat 12s infinite alternate ease-in-out;
+        }
+
+        .blob-1 { top: -10%; left: -10%; background: var(--accent-purple); animation-delay: 0s; }
+        .blob-2 { bottom: -10%; right: -10%; background: var(--accent-pink); animation-delay: -4s; }
+        .blob-3 { top: 40%; left: 30%; background: var(--accent-cyan); width: 250px; height: 250px; animation-delay: -8s; opacity: 0.3; }
+        .blob-4 { top: 65%; right: 5%; background: var(--accent-ice); width: 280px; height: 280px; animation-delay: -6s; opacity: 0.28; }
+
+        @keyframes auroraFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, 50px) scale(1.15); }
+            100% { transform: translate(-20px, -30px) scale(0.95); }
+        }
+
+        /* Floating Glass Header */
+        header {
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(28px) saturate(160%);
+            -webkit-backdrop-filter: blur(28px) saturate(160%);
+            background: rgba(8, 7, 16, 0.6);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 20px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .header-top-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .refresh-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.25s var(--ease);
+        }
+
+        .refresh-btn:active { transform: scale(0.9); }
+
+        .refresh-btn.spinning i {
+            animation: spin 0.7s linear;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Bot Info Glass Bar */
+        .bot-info-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.45s var(--ease);
+        }
+
+        .bot-info-inner {
+            margin: 12px 20px 0;
+            padding: 16px;
+            border-radius: 18px;
+            background: linear-gradient(160deg, rgba(255,255,255,0.08), var(--glass-surface));
+            border: 1px solid var(--glass-border-glow);
+            backdrop-filter: blur(22px) saturate(160%);
+            -webkit-backdrop-filter: blur(22px) saturate(160%);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .bot-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 14px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .bot-info-about {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .bot-info-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 13px;
+            background: linear-gradient(150deg, var(--accent-ice), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            color: #04121c;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(125, 216, 255, 0.3);
+        }
+
+        .bot-info-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.2px;
+        }
+
+        .bot-info-tagline {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .bot-info-features {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            padding-bottom: 14px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .bot-info-feature {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bot-info-feature i {
+            width: 16px;
+            color: var(--accent-ice);
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .bot-info-stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .bot-info-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-ice) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .bot-info-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .bot-info-meta {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .bot-info-dot { opacity: 0.5; }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-title i {
+            -webkit-text-fill-color: var(--accent-purple);
+            font-size: 1.1rem;
+        }
+
+        /* Quick Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .filter-tabs::-webkit-scrollbar { display: none; }
+
+        .filter-tab {
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s var(--ease);
+        }
+
+        .filter-tab:active { transform: scale(0.94); }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, rgba(125, 216, 255, 0.22), rgba(139, 92, 246, 0.22));
+            border-color: var(--accent-ice);
+            color: #fff;
+            box-shadow: 0 0 18px rgba(125, 216, 255, 0.25);
+        }
+
+        /* Modern Search Bar */
+        .search-container {
+            position: relative;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 11px 16px 11px 40px;
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 0.88rem;
+            outline: none;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transition: all 0.3s var(--ease);
+        }
+
+        .search-bar:focus {
+            border-color: var(--accent-ice);
+            box-shadow: 0 0 25px rgba(125, 216, 255, 0.28);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Main Container */
+        .container {
+            padding: 16px 20px;
+        }
+
+        /* Section Title */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        /* Performer Glass Card */
+        .performer-card {
+            background: linear-gradient(160deg, rgba(255,255,255,0.07), var(--glass-surface));
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            padding: 16px;
+            margin-bottom: 12px;
+            backdrop-filter: blur(22px) saturate(160%);
+            -webkit-backdrop-filter: blur(22px) saturate(160%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.06);
+            transition: all 0.35s var(--ease);
+            animation: fadeInUp 0.5s var(--ease) backwards;
+        }
+
+        .performer-card:hover,
+        .performer-card:active {
+            border-color: var(--glass-border-glow);
+            background: linear-gradient(160deg, rgba(255,255,255,0.1), var(--glass-surface-hover));
+        }
+
+        .performer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .performer-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .performer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 13px;
+            background: linear-gradient(150deg, var(--accent-ice), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #04121c;
+            box-shadow: 0 4px 14px rgba(125, 216, 255, 0.3);
+            flex-shrink: 0;
+        }
+
+        .performer-name {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.2px;
+        }
+
+        .badge-count {
+            font-size: 0.72rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(125, 216, 255, 0.12);
+            color: var(--accent-ice);
+            border: 1px solid rgba(125, 216, 255, 0.25);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* Smooth Accordion Years Group */
+        .year-group-wrapper {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.45s var(--ease);
+        }
+
+        .year-group-inner {
+            padding-top: 14px;
+            margin-top: 14px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .year-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 14px 0 6px;
+        }
+
+        .year-title:first-child { margin-top: 0; }
+
+        /* Scene List & Items — flat divided list, not nested glass pills */
+        .scene-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scene-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 2px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: opacity 0.2s var(--ease);
+        }
+
+        .scene-list .scene-item:last-child { border-bottom: none; }
+
+        .scene-item:active { opacity: 0.6; }
+
+        .scene-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .scene-title-text {
+            font-size: 0.83rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .scene-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .status-dot.available { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .status-dot.pending { background: var(--pending); box-shadow: 0 0 6px rgba(255, 159, 107, 0.5); }
+
+        /* Skeleton Shimmer Loader */
+        .skeleton-card {
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skeleton-line {
+            height: 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skeleton-line::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -150%;
+            width: 150%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        /* Bottom Glass Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 420px;
+            background: rgba(10, 9, 18, 0.7);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border: 1px solid var(--glass-border);
+            border-radius: 100px;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-item i {
+            font-size: 1.1rem;
+        }
+
+        .nav-item { transition: 0.25s var(--ease); }
+        .nav-item:active { transform: scale(0.9); }
+
+        .nav-item.active, .nav-item:hover {
+            color: var(--accent-ice);
+            text-shadow: 0 0 10px rgba(125, 216, 255, 0.5);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- VisionOS Aurora Dynamic Background -->
+    <div class="aurora-container">
+        <div class="aurora-blob blob-1"></div>
+        <div class="aurora-blob blob-2"></div>
+        <div class="aurora-blob blob-3"></div>
+        <div class="aurora-blob blob-4"></div>
+    </div>
+
+    <!-- Floating Glass Header -->
+    <header>
+        <div class="header-top">
+            <div class="brand-title">
+                <i class="fa-solid fa-compact-disc"></i>
+                <span>X MANIA ARCHIVE</span>
+            </div>
+            <div class="header-top-right">
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;" id="totalCountBadge">Syncing...</span>
+                <button class="refresh-btn" id="refreshBtn" onclick="handleRefreshClick()" aria-label="Refresh">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Status Filter Pills -->
+        <div class="filter-tabs">
+            <div class="filter-tab active" onclick="setFilter('all', this)">All</div>
+            <div class="filter-tab" onclick="setFilter('archived', this)">Archived</div>
+            <div class="filter-tab" onclick="setFilter('pending', this)">Pending</div>
+        </div>
+
+        <!-- Modern Glass Search Bar -->
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search performer, scene title or studio..." oninput="filterContent()">
+        </div>
+    </header>
+
+    <!-- Bot Info Glass Bar (hidden until toggled from bottom nav) -->
+    <div id="botInfoPanel" class="bot-info-panel">
+        <div class="bot-info-inner">
+            <div class="bot-info-about">
+                <div class="bot-info-avatar"><i class="fa-solid fa-robot"></i></div>
+                <div>
+                    <div class="bot-info-name">X Mania Archive Bot</div>
+                    <div class="bot-info-tagline">Personal video archive & auto-organizer</div>
+                </div>
+            </div>
+
+            <div class="bot-info-features">
+                <div class="bot-info-feature"><i class="fa-solid fa-magnifying-glass-chart"></i> Auto-scrapes performer metadata from IAFD</div>
+                <div class="bot-info-feature"><i class="fa-solid fa-layer-group"></i> Bulk Auto-Add — matches videos to scenes by caption</div>
+                <div class="bot-info-feature"><i class="fa-solid fa-wand-magic-sparkles"></i> Fill Mode — fills empty scenes for a complete-looking archive</div>
+                <div class="bot-info-feature"><i class="fa-solid fa-mobile-screen-button"></i> This Mini App — browse, search & request any scene</div>
+            </div>
+
+            <div class="bot-info-row">
+                <div class="bot-info-stat">
+                    <div class="bot-info-value" id="statPerformers">0</div>
+                    <div class="bot-info-label">Performers</div>
+                </div>
+                <div class="bot-info-stat">
+                    <div class="bot-info-value" id="statTotal">0</div>
+                    <div class="bot-info-label">Scenes</div>
+                </div>
+                <div class="bot-info-stat">
+                    <div class="bot-info-value" id="statArchived">0</div>
+                    <div class="bot-info-label">Archived</div>
+                </div>
+                <div class="bot-info-stat">
+                    <div class="bot-info-value" id="statPending">0</div>
+                    <div class="bot-info-label">Pending</div>
+                </div>
+            </div>
+            <div class="bot-info-meta">
+                <span id="statCompletion">0% archived</span>
+                <span class="bot-info-dot">•</span>
+                <span>Synced <span id="syncTime">—</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="container">
+        <div class="section-header">
+            <div class="section-title">Verified Index</div>
+        </div>
+        <div id="contentList">
+            <!-- Skeleton Loaders for Native App Feel -->
+            <div class="skeleton-card">
+                <div class="skeleton-line" style="width: 50%;"></div>
+                <div class="skeleton-line" style="width: 80%; height: 10px;"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line" style="width: 40%;"></div>
+                <div class="skeleton-line" style="width: 70%; height: 10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Glass Navigation Bar -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="scrollToTop()">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="expandAllCards()">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Expand All</span>
+        </button>
+        <button class="nav-item" onclick="collapseAllCards()">
+            <i class="fa-solid fa-compress"></i>
+            <span>Collapse</span>
+        </button>
+        <button class="nav-item" id="botInfoNavBtn" onclick="toggleBotInfo()">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Bot Info</span>
+        </button>
+    </nav>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Telegram Fullscreen View
+
+        const DATA_URL = "data.json";
+        let masterData = {};
+        let currentFilter = 'all';
+
+        async function fetchIndex() {
+            const container = document.getElementById("contentList");
+            container.innerHTML = `
+                <div class="skeleton-card"><div class="skeleton-line" style="width:50%;"></div><div class="skeleton-line" style="width:80%; height:10px;"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line" style="width:40%;"></div><div class="skeleton-line" style="width:70%; height:10px;"></div></div>
+            `;
+
+            try {
+                const response = await fetch(DATA_URL + "?t=" + new Date().getTime());
+                const data = await response.json();
+                masterData = data.performers || {};
+                updateBotInfoStats(masterData);
+                renderPerformers(masterData);
+            } catch (err) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:var(--pending);">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem;"></i>
+                        <p style="margin-top:10px; font-size:0.85rem;">Failed to load catalog records.</p>
+                    </div>`;
+            }
+        }
+
+        function renderPerformers(performers) {
+            const container = document.getElementById("contentList");
+            container.innerHTML = "";
+
+            const entries = Object.entries(performers);
+            if (entries.length === 0) {
+                container.innerHTML = "<p style='color: var(--text-muted); text-align:center; padding:30px;'>No performers indexed.</p>";
+                document.getElementById("totalCountBadge").innerText = "0 Scenes";
+                return;
+            }
+
+            let globalTotalScenes = 0;
+            let renderedCount = 0;
+
+            entries.forEach(([name, pData], index) => {
+                let totalScenes = 0;
+                let yearsHtml = "";
+
+                if (pData.by_year) {
+                    for (const [year, scenes] of Object.entries(pData.by_year)) {
+                        let filteredScenes = scenes.filter(scene => {
+                            const isUploaded = scene.file_id ? true : false;
+                            if (currentFilter === 'archived') return isUploaded;
+                            if (currentFilter === 'pending') return !isUploaded;
+                            return true;
+                        });
+
+                        if (filteredScenes.length === 0 && currentFilter !== 'all') continue;
+
+                        totalScenes += filteredScenes.length;
+                        globalTotalScenes += filteredScenes.length;
+
+                        let scenesHtml = filteredScenes.map(scene => {
+                            const isUploaded = scene.file_id ? true : false;
+                            const subLine = scene.distributor
+                                ? `<div class="scene-sub">${scene.distributor}</div>`
+                                : "";
+                            return `
+                                <div class="scene-item" onclick="sendToBot('${escapeJs(name)}', '${year}', '${escapeJs(scene.title)}')">
+                                    <div class="scene-info">
+                                        <div class="scene-title-text">${scene.title}</div>
+                                        ${subLine}
+                                    </div>
+                                    <span class="status-dot ${isUploaded ? 'available' : 'pending'}"></span>
+                                </div>
+                            `;
+                        }).join("");
+
+                        if (filteredScenes.length > 0) {
+                            yearsHtml += `
+                                <div class="year-title">${year}</div>
+                                <div class="scene-list">${scenesHtml}</div>
+                            `;
+                        }
+                    }
+                }
+
+                if (yearsHtml === "" && currentFilter !== 'all') return;
+                renderedCount++;
+
+                const cardHtml = `
+                    <div class="performer-card" data-name="${name.toLowerCase()}" style="animation-delay: ${Math.min(index * 0.04, 0.3)}s">
+                        <div class="performer-header" onclick="toggleAccordion(this)">
+                            <div class="performer-meta">
+                                <div class="performer-avatar">${escapeJs(name).trim().charAt(0).toUpperCase()}</div>
+                                <div class="performer-name">${name}</div>
+                            </div>
+                            <span class="badge-count">${totalScenes} Scenes</span>
+                        </div>
+                        <div class="year-group-wrapper">
+                            <div class="year-group-inner">
+                                ${yearsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+
+            document.getElementById("totalCountBadge").innerText = `${globalTotalScenes} Total Scenes`;
+
+            if (renderedCount === 0) {
+                container.innerHTML = "<p style='color: var(--text-muted); text-align:center; padding:30px;'>No matching records found.</p>";
+            }
+        }
+
+        function toggleAccordion(element) {
+            const wrapper = element.nextElementSibling;
+            const isOpen = wrapper.style.maxHeight && wrapper.style.maxHeight !== "0px";
+            
+            if (isOpen) {
+                wrapper.style.maxHeight = "0px";
+            } else {
+                wrapper.style.maxHeight = wrapper.scrollHeight + 500 + "px";
+            }
+        }
+
+        function expandAllCards() {
+            document.querySelectorAll('.year-group-wrapper').forEach(w => {
+                w.style.maxHeight = w.scrollHeight + 500 + "px";
+            });
+        }
+
+        function collapseAllCards() {
+            document.querySelectorAll('.year-group-wrapper').forEach(w => {
+                w.style.maxHeight = "0px";
+            });
+        }
+
+        function setFilter(filterType, tabElement) {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            tabElement.classList.add('active');
+            currentFilter = filterType;
+            filterContent();
+        }
+
+        function sendToBot(performer, year, title) {
+            const payload = {
+                action: "get_scene",
+                performer: performer,
+                year: year,
+                title: title
+            };
+            tg.sendData(JSON.stringify(payload));
+            tg.close();
+        }
+
+        function filterContent() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            
+            let filteredPerformers = {};
+            
+            for (const [name, pData] of Object.entries(masterData)) {
+                let pYears = {};
+                let hasMatch = false;
+
+                if (pData.by_year) {
+                    for (const [year, scenes] of Object.entries(pData.by_year)) {
+                        let validScenes = scenes.filter(scene => {
+                            const isUploaded = scene.file_id ? true : false;
+                            if (currentFilter === 'archived' && !isUploaded) return false;
+                            if (currentFilter === 'pending' && isUploaded) return false;
+
+                            const fullText = `${name} ${scene.title} ${scene.distributor || ''} ${year}`.toLowerCase();
+                            return fullText.includes(query);
+                        });
+
+                        if (validScenes.length > 0) {
+                            pYears[year] = validScenes;
+                            hasMatch = true;
+                        }
+                    }
+                }
+
+                if (hasMatch || name.toLowerCase().includes(query)) {
+                    filteredPerformers[name] = {
+                        url: pData.url,
+                        by_year: Object.keys(pYears).length > 0 ? pYears : pData.by_year
+                    };
+                }
+            }
+
+            renderPerformers(filteredPerformers);
+        }
+
+        function updateBotInfoStats(performers) {
+            let totalPerformers = Object.keys(performers).length;
+            let totalScenes = 0;
+            let archived = 0;
+
+            for (const pData of Object.values(performers)) {
+                if (!pData.by_year) continue;
+                for (const scenes of Object.values(pData.by_year)) {
+                    totalScenes += scenes.length;
+                    archived += scenes.filter(s => !!s.file_id).length;
+                }
+            }
+
+            const pending = totalScenes - archived;
+            const pct = totalScenes > 0 ? Math.round((archived / totalScenes) * 100) : 0;
+
+            document.getElementById("statPerformers").innerText = totalPerformers;
+            document.getElementById("statTotal").innerText = totalScenes;
+            document.getElementById("statArchived").innerText = archived;
+            document.getElementById("statPending").innerText = pending;
+            document.getElementById("statCompletion").innerText = `${pct}% archived`;
+
+            const now = new Date();
+            document.getElementById("syncTime").innerText =
+                now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function toggleBotInfo() {
+            const panel = document.getElementById("botInfoPanel");
+            const navBtn = document.getElementById("botInfoNavBtn");
+            const isOpen = panel.style.maxHeight && panel.style.maxHeight !== "0px";
+
+            if (isOpen) {
+                panel.style.maxHeight = "0px";
+                navBtn.classList.remove("active");
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+                navBtn.classList.add("active");
+            }
+        }
+
+        function handleRefreshClick() {
+            const btn = document.getElementById("refreshBtn");
+            btn.classList.add("spinning");
+            fetchIndex();
+            setTimeout(() => btn.classList.remove("spinning"), 700);
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function escapeJs(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // Initialize Application
+        fetchIndex();
+    </script>
+</body>
+</html>
+
